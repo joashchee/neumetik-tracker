@@ -136,7 +136,10 @@ jobs:
             jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
               -keystore "$keystore" -storepass:env ANDROID_KEYSTORE_PASSWORD \
               -keypass:env ANDROID_KEY_PASSWORD "$aab" "$ANDROID_KEY_ALIAS"
-            jarsigner -verify -strict "$aab"
+            # An upload key is self-signed, which -strict counts as an
+            # error; "jar verified." is what an AAB signed at all prints.
+            jarsigner -verify "$aab" | tee "$RUNNER_TEMP/verify.txt"
+            grep -q '^jar verified\.' "$RUNNER_TEMP/verify.txt"
           done
           rm "$keystore"
       - uses: actions/upload-artifact@v5
