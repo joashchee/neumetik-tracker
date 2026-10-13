@@ -53,7 +53,7 @@ npm run tauri dev                    # the desktop app
 scripts/build-release.sh             # a release build for this machine
 npm run wasm && npm run dev          # the web build, at http://localhost:1480
 npm run build:web                    # the web build, in dist/
-npx tauri android init && npx tauri android dev   # Android (SDK and NDK)
+npx tauri android init && npx tauri android dev   # Android 8.0 and later (SDK and NDK)
 npx tauri ios init && npx tauri ios dev           # iOS (Xcode)
 ```
 
