@@ -65,6 +65,15 @@ on a version tag, attaches the desktop and Android builds to a release,
 and publishes the web build to GitHub Pages. iOS builds need an Apple
 developer team (the `APPLE_DEVELOPMENT_TEAM` secret) to be signed.
 
+The Android AAB is signed for Google Play with an upload key, from the
+secrets `ANDROID_KEYSTORE_BASE64` (the `.jks`, base64),
+`ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and
+`ANDROID_KEY_PASSWORD`. With `PLAY_SERVICE_ACCOUNT_JSON` too (a Google
+Cloud service account given release rights in the Play Console), a
+version tag uploads it to Google Play: the internal track as a draft,
+or the track and status in the `PLAY_TRACK` and `PLAY_RELEASE_STATUS`
+variables. The app's first AAB is uploaded in the Play Console by hand.
+
 ## The keys
 
 | Keys | |
