@@ -1,0 +1,7 @@
+node_modules
+dist
+target
+public/tracker.wasm
+src-tauri/gen/schemas
+*.log
+.DS_Store

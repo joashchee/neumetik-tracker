@@ -1,0 +1,56 @@
+/* The app's frame, and the editor laid out for whatever it's on: a
+   desktop window (the editor's own layout, App.css), a narrow window or
+   a tablet (the side panes under the pattern), a phone (everything in
+   one column, the pattern scrolled sideways, TouchKeys under it). */
+
+html, body, #root { height: 100%; }
+body { overscroll-behavior: none; }
+.app { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+.desk { overflow: auto; padding: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.desk > .panel { min-height: 100%; border: none; border-radius: 0; }
+.menu-bar .about { margin-left: 8px; }
+.play-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; }
+.play-dot.off { visibility: hidden; }
+.status-bar { padding-bottom: env(safe-area-inset-bottom); }
+.menu-bar { padding-top: env(safe-area-inset-top); height: calc(44px + env(safe-area-inset-top)); }
+
+.tracker-bar { flex-wrap: wrap; row-gap: 6px; }
+.tracker-settings { flex-wrap: wrap; row-gap: 6px; }
+
+/* The first-run warning, on the web (the apps show the platform's own). */
+.first-run { height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.first-run .dialog-box { transform: none; }
+.first-run .gone { color: var(--muted); }
+
+/* The keys a phone plays with (components/TouchKeys.tsx). */
+.touch-keys { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.touch-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.touch-row button { min-width: 36px; min-height: 36px; font-family: var(--font-mono); }
+.touch-octave { font-family: var(--font-mono); color: var(--muted); padding: 0 4px; }
+.touch-hex button { flex: 1 0 36px; }
+.touch-piano { display: flex; gap: 2px; height: 96px; }
+.touch-note { flex: 1 1 0; min-width: 0; padding: 0 0 6px; display: flex; align-items: flex-end; justify-content: center; background: #e7e9ee; color: #14161a; border-radius: 0 0 6px 6px; font-size: 11px; }
+.touch-note.sharp { background: #2c313a; color: var(--text); height: 64%; }
+.touch-note:active { background: var(--accent); color: #06201c; }
+
+/* A narrow window or a tablet: the side panes under the pattern. */
+@media (max-width: 1100px) {
+  .tracker { height: auto; }
+  .tracker-main { grid-template-columns: 132px minmax(0, 1fr); }
+  .tracker-side { grid-column: 1 / -1; }
+  .tracker-pane { overflow: visible; }
+}
+
+/* A phone: one column, the pattern scrolled sideways. */
+@media (max-width: 700px) {
+  .tracker { padding: 8px; }
+  .tracker-main { display: flex; flex-direction: column; }
+  .tracker-orders { max-height: 180px; overflow-y: auto; }
+  .tracker-grid-wrap { overflow-x: auto; }
+  .tracker-grid { height: calc(16 * 16px + 10px); }
+  .tracker-settings select { width: 140px; }
+  .menu-bar .menu-state { display: none; }
+  .status-bar .error, .status-bar .status-message { max-width: 100%; }
+  .dialog-box { max-height: 90vh; }
+}

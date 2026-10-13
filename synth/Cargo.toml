@@ -1,0 +1,18 @@
+[package]
+name = "neumetik-synth"
+version = "0.1.0"
+edition = "2021"
+authors = ["ansiapps"]
+license = "MIT"
+description = "Synth: the synthesis methods Neumetik's other crates play, FM (OPL2 and OPL3) and OctaMED's synth sounds, written from scratch"
+publish = false
+
+# Written from public descriptions (datasheets, format specifications):
+# no dependencies, so every line is ansiapps' own.
+[dependencies]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("copies"))'] }
+
+[profile.test]
+opt-level = 3

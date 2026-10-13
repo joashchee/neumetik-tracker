@@ -1,0 +1,186 @@
+# The app for every platform: macOS, Windows and Linux (Tauri), Android
+# and iOS (Tauri mobile), and the web (WebAssembly, published to GitHub
+# Pages). Runs on a version tag (v0.1.0) and by hand; a tag also makes a
+# GitHub release with the desktop and Android builds attached.
+name: Build
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            args: --target aarch64-apple-darwin
+            rust_target: aarch64-apple-darwin
+          - os: macos-13
+            args: --target x86_64-apple-darwin
+            rust_target: x86_64-apple-darwin
+          - os: windows-latest
+            args: ""
+            rust_target: ""
+          - os: ubuntu-22.04
+            args: ""
+            rust_target: ""
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tracker-app
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libasound2-dev
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tracker-app/package-lock.json
+      - run: npm ci
+        working-directory: tracker-app
+      - name: Build
+        shell: bash
+        working-directory: tracker-app
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then npx tauri build ${{ matrix.args }}; else scripts/build-release.sh ${{ matrix.args }}; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            tracker-app/target/**/release/bundle/dmg/*.dmg
+            tracker-app/target/**/release/bundle/nsis/*.exe
+            tracker-app/target/**/release/bundle/msi/*.msi
+            tracker-app/target/**/release/bundle/deb/*.deb
+            tracker-app/target/**/release/bundle/appimage/*.AppImage
+            tracker-app/target/**/release/bundle/rpm/*.rpm
+          if-no-files-found: error
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - name: NDK
+        run: |
+          sdkmanager --install "ndk;27.2.12479018"
+          echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tracker-app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tracker-app/package-lock.json
+      - name: Build (an unsigned APK and AAB; sign them for the Play Store)
+        working-directory: tracker-app
+        run: |
+          npm ci
+          npx tauri android init --ci
+          npx tauri android build --ci --apk --aab
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: |
+            tracker-app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+            tracker-app/src-tauri/gen/android/app/build/outputs/bundle/**/*.aab
+          if-no-files-found: error
+
+  ios:
+    runs-on: macos-latest
+    env:
+      APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tracker-app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tracker-app/package-lock.json
+      - name: The Xcode project, and the app's library for iPhone and the simulator
+        working-directory: tracker-app
+        run: |
+          npm ci
+          npx tauri ios init --ci
+          cargo build --release --lib -p neumetik-tracker-app --target aarch64-apple-ios
+          cargo build --release --lib -p neumetik-tracker-app --target aarch64-apple-ios-sim
+      # A signed IPA needs an Apple developer team: set the APPLE_DEVELOPMENT_TEAM
+      # secret (and a signing certificate) and this builds one.
+      - name: IPA (signed)
+        if: env.APPLE_DEVELOPMENT_TEAM != ''
+        working-directory: tracker-app
+        run: npx tauri ios build --ci --export-method app-store-connect
+      - uses: actions/upload-artifact@v4
+        if: env.APPLE_DEVELOPMENT_TEAM != ''
+        with:
+          name: ios
+          path: tracker-app/src-tauri/gen/apple/build/**/*.ipa
+
+  web:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tracker-app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tracker-app/package-lock.json
+      - name: Build
+        working-directory: tracker-app
+        env:
+          BASE: /${{ github.event.repository.name }}/
+        run: |
+          npm ci
+          npm run build:web
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: tracker-app/dist
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [desktop, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: out/**/*
+          generate_release_notes: true

@@ -1,0 +1,29 @@
+[package]
+name = "neumetik-tracker-app"
+description = "Neumetik Tracker: tracker modules played and edited, on the desktop and on phones"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+# The `_lib` suffix keeps the lib name distinct from the bin name
+# (https://github.com/rust-lang/cargo/issues/8519).
+name = "neumetik_tracker_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# The song, its undo and every command, shared with the web build.
+neumetik-tracker-session = { path = "../session" }
+neumetik-tracker = { path = "../../tracker", default-features = false }
+# Sound out of the speakers: Core Audio, WASAPI, ALSA, AAudio (Apache-2.0).
+cpal = "0.16"

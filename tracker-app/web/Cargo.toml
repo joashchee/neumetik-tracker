@@ -1,0 +1,17 @@
+[package]
+name = "neumetik-tracker-web"
+description = "The tracker in the browser: the session and its sound as WebAssembly, run in an AudioWorklet (and a Worker for exports)"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+neumetik-tracker-session = { path = "../session" }
+
+[dev-dependencies]
+serde_json = "1"

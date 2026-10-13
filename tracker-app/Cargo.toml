@@ -1,0 +1,28 @@
+# The open-source tracker app: its session (what every platform shares),
+# the desktop and mobile app (Tauri), and the web build (WebAssembly).
+[workspace]
+members = ["session", "web", "src-tauri"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["ansiapps"]
+license = "MIT"
+
+# Playing is slow unoptimized: the dev build optimizes the sound.
+[profile.dev.package.neumetik-tracker]
+opt-level = 3
+[profile.dev.package.neumetik-synth]
+opt-level = 3
+
+# The tests play whole songs: optimized, still checking for overflow.
+[profile.test]
+opt-level = 3
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

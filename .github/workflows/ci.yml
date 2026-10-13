@@ -1,0 +1,47 @@
+# Every push and pull request: the crates' tests, the app's types, and the
+# web build.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            tracker
+            synth
+            tracker-app
+      - name: Linux libraries (Tauri, ALSA)
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libasound2-dev
+      - name: Synth
+        run: cargo test
+        working-directory: synth
+      - name: Tracker
+        run: cargo test
+        working-directory: tracker
+      - name: Session and web
+        run: cargo test -p neumetik-tracker-session -p neumetik-tracker-web
+        working-directory: tracker-app
+      - name: The app compiles
+        run: cargo check -p neumetik-tracker-app
+        working-directory: tracker-app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tracker-app/package-lock.json
+      - name: Web build
+        working-directory: tracker-app
+        run: |
+          npm ci
+          npm run build:web

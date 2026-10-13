@@ -1,0 +1,22 @@
+[package]
+name = "neumetik-tracker"
+version = "0.2.0"
+edition = "2021"
+authors = ["ansiapps"]
+license = "MIT"
+description = "Tracker: music tracker modules read and played, their samples kept once in a repository, and UMF, the format that refers to them"
+publish = false
+
+# Written from scratch on the formats' public descriptions: no
+# third-party dependencies, so every line is ansiapps' own.
+[dependencies]
+# The synths the formats need (FM for AdLib instruments, OctaMED's synth
+# sounds), in ../synth.
+neumetik-synth = { path = "../synth" }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("repository", "visual"))'] }
+
+# The tests play whole modules: optimized, still checking for overflow.
+[profile.test]
+opt-level = 3
