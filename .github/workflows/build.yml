@@ -23,7 +23,8 @@ jobs:
           - os: macos-latest
             args: --target aarch64-apple-darwin
             rust_target: aarch64-apple-darwin
-          - os: macos-13
+          # Intel Macs, cross-compiled (GitHub's Intel runners are going).
+          - os: macos-latest
             args: --target x86_64-apple-darwin
             rust_target: x86_64-apple-darwin
           - os: windows-latest
@@ -34,7 +35,7 @@ jobs:
             rust_target: ""
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.rust_target }}
@@ -43,7 +44,7 @@ jobs:
           workspaces: tracker-app
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libasound2-dev
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -55,9 +56,9 @@ jobs:
         working-directory: tracker-app
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then npx tauri build ${{ matrix.args }}; else scripts/build-release.sh ${{ matrix.args }}; fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
-          name: desktop-${{ matrix.os }}
+          name: desktop-${{ matrix.os }}${{ matrix.rust_target && format('-{0}', matrix.rust_target) || '' }}
           path: |
             tracker-app/target/**/release/bundle/dmg/*.dmg
             tracker-app/target/**/release/bundle/nsis/*.exe
@@ -70,23 +71,23 @@ jobs:
   android:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
+      # The runner has the Android SDK already; the NDK is added to it.
       - name: NDK
         run: |
-          sdkmanager --install "ndk;27.2.12479018"
-          echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> "$GITHUB_ENV"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;27.2.12479018"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: tracker-app
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -97,7 +98,7 @@ jobs:
           npm ci
           npx tauri android init --ci
           npx tauri android build --ci --apk --aab
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: android
           path: |
@@ -110,32 +111,35 @@ jobs:
     env:
       APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-ios,aarch64-apple-ios-sim
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: tracker-app
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: tracker-app/package-lock.json
-      - name: The Xcode project, and the app's library for iPhone and the simulator
+      # Without a team, the app's code compiled for iPhone and the simulator.
+      - name: The app's library for iPhone and the simulator
         working-directory: tracker-app
         run: |
           npm ci
-          npx tauri ios init --ci
+          npm run build
           cargo build --release --lib -p neumetik-tracker-app --target aarch64-apple-ios
           cargo build --release --lib -p neumetik-tracker-app --target aarch64-apple-ios-sim
-      # A signed IPA needs an Apple developer team: set the APPLE_DEVELOPMENT_TEAM
-      # secret (and a signing certificate) and this builds one.
+      # With one (the APPLE_DEVELOPMENT_TEAM secret, and a signing
+      # certificate), the Xcode project made and a signed IPA built.
       - name: IPA (signed)
         if: env.APPLE_DEVELOPMENT_TEAM != ''
         working-directory: tracker-app
-        run: npx tauri ios build --ci --export-method app-store-connect
-      - uses: actions/upload-artifact@v4
+        run: |
+          npx tauri ios init --ci
+          npx tauri ios build --ci --export-method app-store-connect
+      - uses: actions/upload-artifact@v5
         if: env.APPLE_DEVELOPMENT_TEAM != ''
         with:
           name: ios
@@ -147,14 +151,14 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: tracker-app
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -177,7 +181,7 @@ jobs:
     needs: [desktop, android]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: out
       - uses: softprops/action-gh-release@v2

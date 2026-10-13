@@ -11,7 +11,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
@@ -32,10 +32,7 @@ jobs:
       - name: Session and web
         run: cargo test -p neumetik-tracker-session -p neumetik-tracker-web
         working-directory: tracker-app
-      - name: The app compiles
-        run: cargo check -p neumetik-tracker-app
-        working-directory: tracker-app
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -45,3 +42,7 @@ jobs:
         run: |
           npm ci
           npm run build:web
+      # After the web build: the app embeds what it built.
+      - name: The app compiles
+        run: cargo check -p neumetik-tracker-app
+        working-directory: tracker-app
