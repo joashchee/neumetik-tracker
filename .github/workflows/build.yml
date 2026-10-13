@@ -209,9 +209,6 @@ jobs:
 
   web:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
@@ -235,6 +232,18 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: tracker-app/dist
+
+  # Published from the default branch or a version tag only: GitHub
+  # Pages turns any other branch down. Other branches build the web
+  # app above and stop there.
+  pages:
+    if: github.ref_type == 'tag' || github.ref_name == github.event.repository.default_branch
+    needs: web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
         uses: actions/deploy-pages@v4
 
