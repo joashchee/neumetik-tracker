@@ -1,3 +1,6 @@
+<!-- Published at https://joashchee.github.io/neumetik-tracker/privacy.html
+     (tracker-app/public/privacy.html): change both together. -->
+
 # Neumetik Tracker: Privacy Policy
 
 _Last updated: 14 October 2026_
