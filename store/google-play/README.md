@@ -73,10 +73,13 @@ original, so there's no one else's music in the listing.
 
 ## Privacy policy
 
-Play asks every app for one. `privacy-policy.md` is a policy that fits
-this app. Host it somewhere public, such as GitHub Pages or the
-repository's own page for the file, and put its URL in Policy → App
-content → Privacy policy.
+Play asks every app for one. It's published with the web build, at
+
+> https://joashchee.github.io/neumetik-tracker/privacy.html
+
+(`tracker-app/public/privacy.html`), and kept here as
+`privacy-policy.md` too. The two say the same: change them together.
+Its URL goes in Policy → App content → Privacy policy.
 
 ## Making them again
 
